@@ -4,6 +4,7 @@ import time
 import scrapy
 from scrapy.http import Response
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,7 +17,16 @@ class HousesSpider(scrapy.Spider):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.driver = webdriver.Chrome()
+
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--enable-javascript")
+        chrome_options.add_argument("--log-level=3")
+        chrome_options.add_argument("--mute-audio")
+        chrome_options.add_argument(
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+        )
+        self.driver = webdriver.Chrome(options=chrome_options)
 
     def parse(self, response: Response, **kwargs):
         final_urls = set()
