@@ -35,5 +35,50 @@ class HousesSpider(scrapy.Spider):
             next_button.click()
             time.sleep(1)
 
+    def parse_detail(self, response):
+        self.driver.get(response.url)
+
+        next_button = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "div.summary-photos a[role='button']"))
+        )
+
+        self.driver.execute_script("arguments[0].click();", next_button)
+        time.sleep(1)
+
+        but = self.driver.find_element(By.CSS_SELECTOR, "div.wrap")
+        urls = []
+
+        for image_num in range(1, len(self.driver.find_elements(By.CSS_SELECTOR, "div.carousel > ul > li > img"))):
+            urls.append(but.find_element(By.TAG_NAME, "img").get_attribute("src"))
+            next_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable(but)
+            )
+            next_button.click()
+
+        title: str = response.css('span[data-id="PageTitle"]::text').get()
+
+        address_region = response.css('h2[itemprop="address"]::text').get().strip().split(",")
+        region: str = ''.join(address_region[1:]).strip()
+        address: str = ''.join(address_region[:1])
+
+        description: str = ''.join(response.css('div[itemprop="description"]::text').getall())
+        price: int = int(response.css("span.text-nowrap::text").get().replace("$", "").replace(",", ""))
+        num_text = ''.join(response.css("div.row.teaser div::text").getall())
+        number: int = sum([int(num) for num in re.findall(r'\d+', num_text)])
+
+        area = response.css("div.carac-value > span::text").get().strip().split()[0].replace(",", "")
+
+        yield {
+            "link": response.url,
+            "title": title,
+            "region": region,
+            "address": address,
+            "description": description.strip() if description else None,
+            "photo_urls": urls,
+            "price": price,
+            "number_of_rooms": number,
+            "area": int(area) if area.isnumeric() else None
+        }
+
     def closed(self, reason):
         self.driver.quit()
